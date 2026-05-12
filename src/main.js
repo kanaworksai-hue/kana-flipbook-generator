@@ -637,6 +637,20 @@ function drawSweepShadow() {
   return canvasShadow;
 }
 
+function drawGutterShadow() {
+  const gutter = createCanvas(256, 1024);
+  const ctx = gutter.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, gutter.width, 0);
+  gradient.addColorStop(0, "rgba(0,0,0,0)");
+  gradient.addColorStop(0.34, "rgba(0,0,0,0.035)");
+  gradient.addColorStop(0.5, "rgba(0,0,0,0.13)");
+  gradient.addColorStop(0.66, "rgba(0,0,0,0.035)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, gutter.width, gutter.height);
+  return gutter;
+}
+
 function pageTextureFromCanvas(pageCanvas) {
   const texture = new THREE.CanvasTexture(pageCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -662,8 +676,12 @@ function disposeMeshes() {
     const child = pageGroup.children.pop();
     child.geometry?.dispose();
     if (Array.isArray(child.material)) {
-      child.material.forEach((mat) => mat.dispose());
+      child.material.forEach((mat) => {
+        if (child.userData.localTexture && child.userData.localTexture === mat.map) mat.map.dispose();
+        mat.dispose();
+      });
     } else {
+      if (child.userData.localTexture && child.userData.localTexture === child.material?.map) child.material.map.dispose();
       child.material?.dispose();
     }
   }
@@ -898,23 +916,32 @@ function addBookBack() {
   meshRefs.rightCover.userData.cover = true;
   pageGroup.add(meshRefs.rightCover);
 
+  const spineColor = new THREE.Color(state.accent).lerp(new THREE.Color(0x16201d), 0.58);
   meshRefs.spine = new THREE.Mesh(
-    new THREE.BoxGeometry(0.14, pageH + 0.3, 0.46),
-    new THREE.MeshStandardMaterial({ color: 0x1f2423, roughness: 0.8 }),
+    new THREE.BoxGeometry(0.032, pageH + 0.08, 0.14),
+    new THREE.MeshStandardMaterial({
+      color: spineColor,
+      roughness: 0.92,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.42,
+    }),
   );
-  meshRefs.spine.position.set(0, 0, 0);
+  meshRefs.spine.position.set(0, 0, -0.15);
   pageGroup.add(meshRefs.spine);
 
+  const gutterTexture = pageTextureFromCanvas(drawGutterShadow());
   meshRefs.gutter = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.08, pageH + 0.03),
+    new THREE.PlaneGeometry(0.18, pageH + 0.02),
     new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      map: gutterTexture,
       transparent: true,
-      opacity: 0.24,
+      opacity: 0.5,
       depthWrite: false,
     }),
   );
-  meshRefs.gutter.position.set(0, 0, 0.085);
+  meshRefs.gutter.userData.localTexture = gutterTexture;
+  meshRefs.gutter.position.set(0, 0, 0.06);
   pageGroup.add(meshRefs.gutter);
 
   meshRefs.leftStack = createStackMesh("left");

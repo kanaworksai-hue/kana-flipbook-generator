@@ -53,6 +53,7 @@ button {
   flex-direction: column;
   gap: 18px;
   height: 100vh;
+  min-width: 0;
   padding: 24px;
   overflow-y: auto;
   border-right: 1px solid var(--line);
@@ -64,6 +65,7 @@ button {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
 }
 
 .brand-actions {
@@ -71,6 +73,10 @@ button {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.brand-strip > div:first-child {
+  min-width: 0;
 }
 
 .language-switcher {
@@ -105,6 +111,7 @@ button {
   grid-template-columns: 76px 1fr;
   gap: 14px;
   align-items: center;
+  min-width: 0;
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
   border-radius: 8px;
@@ -145,6 +152,7 @@ button {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .creator-link {
@@ -361,7 +369,7 @@ a:focus-visible {
 
 .segmented {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
   border: 1px solid var(--line);
@@ -696,12 +704,38 @@ a:focus-visible {
     padding: 18px;
   }
 
+  .brand-strip {
+    flex-direction: column;
+  }
+
+  .brand-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .creator-card {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .creator-logo {
+    width: 64px;
+    height: 64px;
+  }
+
   h1 {
     font-size: 24px;
   }
 
   .action-bar {
     grid-template-columns: 1fr;
+  }
+
+  .segmented {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .segment {
+    font-size: 12px;
   }
 
   .stage-toolbar {

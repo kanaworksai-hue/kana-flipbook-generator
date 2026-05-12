@@ -45,7 +45,7 @@
             <span id="pageCount">0 pages</span>
           </div>
           <label class="drop-zone" for="assetInput">
-            <input id="assetInput" type="file" accept="image/*,video/*" multiple />
+            <input id="assetInput" type="file" accept="image/*,video/*,.heic,.heif,.jpg,.jpeg,.png,.webp,.gif,.mov,.mp4,.m4v,video/mp4,video/quicktime,video/x-m4v" multiple />
             <i data-lucide="upload-cloud"></i>
             <strong id="uploadTitle">Upload images or videos</strong>
             <span id="uploadHint">Select multiple files. Pages follow the upload order.</span>
@@ -71,7 +71,9 @@
           </div>
           <div class="segmented" role="group" aria-label="Aspect ratio">
             <button class="segment active" type="button" data-ratio="9:16">9:16</button>
+            <button class="segment" type="button" data-ratio="3:4">3:4</button>
             <button class="segment" type="button" data-ratio="1:1">1:1</button>
+            <button class="segment" type="button" data-ratio="4:3">4:3</button>
             <button class="segment" type="button" data-ratio="16:9">16:9</button>
           </div>
 

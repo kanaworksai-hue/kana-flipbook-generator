@@ -15,9 +15,10 @@ Then open `http://localhost:4173`.
 ## Features
 
 - Multi-file image and video uploads
+- Mobile-friendly MOV, MP4, and M4V video selection
 - Text pages with separate title and content fields, with automatic pagination for long content
 - Select and drag pages to reorder them
-- SNS aspect ratios: 9:16, 1:1, and 16:9
+- SNS aspect ratios: 9:16, 3:4, 1:1, 4:3, and 16:9
 - Adjustable page interval, flip duration, background color, and optional background image
 - Open-spread start, front/back page textures, and stacked paper thickness
 - Three.js 3D flipbook preview

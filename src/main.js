@@ -248,12 +248,16 @@ const translations = {
 
 const ratioSizes = {
   "9:16": { width: 1080, height: 1920, pageW: 2.2, pageH: 3.9 },
+  "3:4": { width: 1080, height: 1440, pageW: 2.7, pageH: 3.6 },
   "1:1": { width: 1080, height: 1080, pageW: 3.15, pageH: 3.15 },
+  "4:3": { width: 1440, height: 1080, pageW: 4.0, pageH: 3.0 },
   "16:9": { width: 1920, height: 1080, pageW: 4.25, pageH: 2.4 },
 };
 
 const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
+const imageFilePattern = /\.(avif|gif|heic|heif|jpe?g|png|webp)$/i;
+const videoFilePattern = /\.(m4v|mov|mp4|og[gv]|webm)$/i;
 
 function copy() {
   return translations[state.language] || translations.en;
@@ -681,17 +685,28 @@ async function createImageElement(file) {
 async function createVideoElement(file) {
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
-  video.src = url;
   video.muted = true;
   video.loop = false;
   video.playsInline = true;
   video.preload = "auto";
-  await new Promise((resolve, reject) => {
+  const ready = new Promise((resolve, reject) => {
+    video.onloadedmetadata = resolve;
     video.onloadeddata = resolve;
     video.onerror = reject;
   });
+  video.src = url;
+  video.load();
+  await ready;
   await video.play().catch(() => {});
   return { video, url };
+}
+
+function isImageFile(file) {
+  return (file.type || "").startsWith("image/") || imageFilePattern.test(file.name || "");
+}
+
+function isVideoFile(file) {
+  return (file.type || "").startsWith("video/") || videoFilePattern.test(file.name || "");
 }
 
 function updateBackgroundStatus() {
@@ -806,9 +821,9 @@ function prepareLastVideoOnce() {
 }
 
 async function addFiles(files) {
-  const accepted = [...files].filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"));
+  const accepted = [...files].filter((file) => isImageFile(file) || isVideoFile(file));
   for (const file of accepted) {
-    if (file.type.startsWith("image/")) {
+    if (isImageFile(file)) {
       const { image, url } = await createImageElement(file);
       state.pages.push({
         id: crypto.randomUUID(),

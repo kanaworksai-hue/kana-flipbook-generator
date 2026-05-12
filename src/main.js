@@ -515,26 +515,6 @@ function paginateTextContent(title, content, ratio = state.ratio) {
   }));
 }
 
-function drawPageFooter(ctx, width, height, pageNumber, totalPages, tone = "dark") {
-  if (!pageNumber || !totalPages) return;
-  const base = Math.min(width, height);
-  const y = height * 0.875;
-  const color = tone === "light" ? "rgba(255,255,255,0.82)" : "rgba(31,36,35,0.34)";
-  ctx.save();
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = color;
-  ctx.font = `800 ${Math.round(base * 0.022)}px Inter, system-ui, sans-serif`;
-  if (tone === "light") {
-    ctx.shadowColor = "rgba(0,0,0,0.36)";
-    ctx.shadowBlur = base * 0.012;
-  }
-  ctx.textAlign = "center";
-  ctx.fillText(`${pageNumber} / ${totalPages}`, width * 0.5, y);
-  ctx.textAlign = "right";
-  ctx.fillText("KanaWorks_AI", width * 0.9, y);
-  ctx.restore();
-}
-
 function drawTextPage(pageData, ratio = state.ratio) {
   const { width, height } = ratioSizes[ratio];
   const page = createCanvas(width, height);
@@ -565,7 +545,6 @@ function drawTextPage(pageData, ratio = state.ratio) {
   const maxBodyLines = Math.max(1, Math.floor((layout.footerY - bodyY - layout.bodyLineHeight * 0.35) / layout.bodyLineHeight));
   const bodyLines = Array.isArray(pageData.bodyLines) ? pageData.bodyLines : wrapTextLines(ctx, body, layout.maxTextW);
   drawTextLines(ctx, bodyLines, layout.contentX, bodyY, layout.bodyLineHeight, maxBodyLines);
-  drawPageFooter(ctx, width, height, pageData.pageNumber, pageData.totalPages, "dark");
   return page;
 }
 
@@ -878,12 +857,6 @@ function pageToCanvas(page, index = -1) {
   ctx.fillStyle = "#f8f4ec";
   ctx.fillRect(0, 0, width, height);
   coverDraw(ctx, page.source, width, height);
-  const overlay = ctx.createLinearGradient(0, height * 0.72, 0, height);
-  overlay.addColorStop(0, "rgba(0,0,0,0)");
-  overlay.addColorStop(1, "rgba(0,0,0,0.46)");
-  ctx.fillStyle = overlay;
-  ctx.fillRect(0, 0, width, height);
-  drawPageFooter(ctx, width, height, index + 1, state.pages.length, "light");
   return result;
 }
 
@@ -900,19 +873,19 @@ function refreshDynamicVideoTextures() {
 
 function addBookBack() {
   const { pageW, pageH } = ratioSizes[state.ratio];
-  const coverGeometry = new THREE.BoxGeometry(pageW + 0.18, pageH + 0.18, 0.14);
+  const coverGeometry = new THREE.BoxGeometry(pageW - 0.045, pageH - 0.045, 0.08);
   const coverMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(state.accent),
-    roughness: 0.75,
-    metalness: 0.02,
+    color: 0x17211f,
+    roughness: 0.88,
+    metalness: 0,
   });
   meshRefs.leftCover = new THREE.Mesh(coverGeometry, coverMaterial.clone());
-  meshRefs.leftCover.position.set(-pageW / 2 - 0.02, 0, -0.13);
+  meshRefs.leftCover.position.set(-pageW / 2, 0, -0.15);
   meshRefs.leftCover.userData.cover = true;
   pageGroup.add(meshRefs.leftCover);
 
   meshRefs.rightCover = new THREE.Mesh(coverGeometry.clone(), coverMaterial.clone());
-  meshRefs.rightCover.position.set(pageW / 2 + 0.02, 0, -0.13);
+  meshRefs.rightCover.position.set(pageW / 2, 0, -0.15);
   meshRefs.rightCover.userData.cover = true;
   pageGroup.add(meshRefs.rightCover);
 

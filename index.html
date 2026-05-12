@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KANA Flipbook Generator</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="control-panel">
+        <section class="creator-card" aria-label="KanaWorks_AI">
+          <img class="creator-logo" src="./assets/logo500.png" alt="KanaWorks_AI logo" />
+          <div class="creator-copy">
+            <p class="eyebrow">KanaWorks_AI</p>
+            <strong id="creatorTitle">AI Creator & Flipbook Video Tool</strong>
+            <span id="creatorPromo">Follow X for the latest AI news, prompts, and tool updates.</span>
+            <a class="creator-link" href="https://x.com/KanaWorks_AI" target="_blank" rel="noopener noreferrer">
+              <i data-lucide="external-link"></i>
+              @KanaWorks_AI
+            </a>
+          </div>
+        </section>
+
+        <header class="brand-strip">
+          <div>
+            <p class="eyebrow">KanaWorks_AI</p>
+            <h1 id="appTitle">KANA Flipbook Generator</h1>
+          </div>
+          <div class="brand-actions">
+            <div class="language-switcher" role="group" aria-label="Language">
+              <button class="language-button active" type="button" data-language="en">EN</button>
+              <button class="language-button" type="button" data-language="ja">JP</button>
+            </div>
+            <button class="icon-button" type="button" id="resetBtn" aria-label="Reset project" title="Reset project">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+        </header>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <h2 id="assetsHeading">Assets</h2>
+            <span id="pageCount">0 pages</span>
+          </div>
+          <label class="drop-zone" for="assetInput">
+            <input id="assetInput" type="file" accept="image/*,video/*" multiple />
+            <i data-lucide="upload-cloud"></i>
+            <strong id="uploadTitle">Upload images or videos</strong>
+            <span id="uploadHint">Select multiple files. Pages follow the upload order.</span>
+          </label>
+
+          <label class="field">
+            <span id="titleLabel">Title</span>
+            <input id="textTitleInput" type="text" placeholder="Enter a title" />
+          </label>
+          <label class="field">
+            <span id="contentLabel">Content</span>
+            <textarea id="textInput" rows="6" placeholder="Enter announcements, issue notes, or portfolio text. Long content is split automatically."></textarea>
+          </label>
+          <button class="text-button" type="button" id="addTextBtn">
+            <i data-lucide="type"></i>
+            <span id="addTextLabel">Add Text Page</span>
+          </button>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <h2 id="videoSettingsHeading">Video Settings</h2>
+          </div>
+          <div class="segmented" role="group" aria-label="Aspect ratio">
+            <button class="segment active" type="button" data-ratio="9:16">9:16</button>
+            <button class="segment" type="button" data-ratio="1:1">1:1</button>
+            <button class="segment" type="button" data-ratio="16:9">16:9</button>
+          </div>
+
+          <label class="range-field">
+            <span><span id="pageIntervalLabel">Page Interval</span> <output id="holdOutput">0.35s</output></span>
+            <input id="holdInput" type="range" min="0.1" max="1.2" step="0.05" value="0.35" />
+          </label>
+
+          <label class="range-field">
+            <span><span id="flipDurationLabel">Flip Duration</span> <output id="flipOutput">0.75s</output></span>
+            <input id="flipInput" type="range" min="0.35" max="1.4" step="0.05" value="0.75" />
+          </label>
+
+          <div class="background-panel">
+            <div class="section-heading compact-heading">
+              <h3 id="backgroundLabel">Background</h3>
+              <span id="backgroundStatus">Using color background</span>
+            </div>
+            <label class="field compact">
+              <span id="backgroundColorLabel">Background Color</span>
+              <input id="accentInput" type="color" value="#16a085" />
+            </label>
+            <label class="background-upload" for="backgroundImageInput">
+              <input id="backgroundImageInput" type="file" accept="image/*" />
+              <i data-lucide="image-plus"></i>
+              <span id="backgroundImageLabel">Upload Background Image</span>
+            </label>
+            <button class="mini-button hidden" type="button" id="clearBackgroundBtn">
+              <i data-lucide="x"></i>
+              <span id="clearBackgroundLabel">Clear Image</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <h2 id="pageOrderHeading">Page Order</h2>
+            <button class="mini-button" type="button" id="clearPagesBtn">
+              <i data-lucide="trash-2"></i>
+              <span id="clearPagesLabel">Clear</span>
+            </button>
+          </div>
+          <div class="page-list" id="pageList" aria-live="polite"></div>
+        </section>
+
+        <footer class="action-bar">
+          <button class="secondary-button" type="button" id="previewBtn">
+            <i data-lucide="play"></i>
+            <span id="previewLabel">Preview</span>
+          </button>
+          <button class="primary-button" type="button" id="exportBtn">
+            <i data-lucide="film"></i>
+            <span id="exportLabel">Generate Video</span>
+          </button>
+        </footer>
+      </aside>
+
+      <main class="stage-wrap">
+        <div class="stage-toolbar">
+          <div>
+            <p id="statusText">Add assets to start previewing</p>
+            <strong id="currentPageLabel">KANA Flipbook Generator</strong>
+          </div>
+          <a class="download-link hidden" id="downloadLink" download="flipbook-video.mov">
+            <i data-lucide="download"></i>
+            <span id="downloadLabel">Download Video</span>
+          </a>
+        </div>
+        <canvas id="flipCanvas" aria-label="3D flipbook video preview"></canvas>
+        <div class="empty-state" id="emptyState">
+          <i data-lucide="book-open"></i>
+          <span id="emptyStateText">Upload text, images, or videos to generate a recordable 3D flipbook.</span>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

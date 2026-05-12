@@ -951,15 +951,16 @@ function addBookBack() {
 
 function createStackMesh(side) {
   const { pageW, pageH } = ratioSizes[state.ratio];
+  const gutterInset = 0.055;
   const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(pageW, pageH, 1),
+    new THREE.BoxGeometry(pageW - gutterInset, pageH, 1),
     new THREE.MeshStandardMaterial({
-      color: 0xf3ede2,
+      color: 0xe6dccb,
       roughness: 0.95,
       metalness: 0,
     }),
   );
-  mesh.position.x = side === "left" ? -pageW / 2 : pageW / 2;
+  mesh.position.x = side === "left" ? -pageW / 2 - gutterInset / 2 : pageW / 2 + gutterInset / 2;
   mesh.position.z = -0.04;
   mesh.scale.z = 0.001;
   mesh.visible = false;
@@ -1289,7 +1290,7 @@ function poseTurningSheet(progress, options = {}) {
 
 function updateStacks(leftSheets, activeProgress, mode) {
   const totalSheets = Math.max(1, Math.ceil(state.textures.length / 2));
-  const maxThickness = Math.min(0.12, 0.012 * totalSheets + 0.035);
+  const maxThickness = Math.min(0.055, 0.006 * totalSheets + 0.018);
   const sheetThickness = maxThickness / totalSheets;
   let leftThickness = Math.max(0, leftSheets * sheetThickness);
   let rightThickness = Math.max(0, (totalSheets - leftSheets) * sheetThickness);

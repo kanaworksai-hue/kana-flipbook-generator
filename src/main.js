@@ -1125,6 +1125,15 @@ async function rebuildBook() {
   resizeRenderer();
 }
 
+function rebuildBookMeshes() {
+  disposeMeshes();
+  buildOpenBook();
+  updatePageTransforms(0);
+  renderPageList();
+  resizeRenderer();
+  renderFrameOnce();
+}
+
 function updatePageTransforms(timeSeconds) {
   const timeline = state.playing || state.exportMode ? timeSeconds : 0;
   const pose = getTimelinePose(timeline);
@@ -1574,20 +1583,26 @@ function fitBookToViewport(width, height) {
   const { pageW, pageH } = ratioSizes[state.ratio];
   const spreadW = pageW * 2.08;
   const baseScale = camera.aspect < 0.8 ? 0.72 : 0.94;
-  const scale = baseScale * state.zoom;
-  const cameraHeightT = (state.cameraHeight - 40) / 45;
+  const zoom = THREE.MathUtils.clamp(state.zoom, 0.65, 1.35);
+  const cameraHeightT = clamp01((state.cameraHeight - 40) / 45);
   const fovTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const distanceForHeight = (pageH * baseScale * 0.58) / fovTan;
   const distanceForWidth = (spreadW * baseScale * 0.54) / (fovTan * camera.aspect);
-  bookGroup.scale.setScalar(scale);
+  bookGroup.scale.setScalar(baseScale);
   bookGroup.position.y = 0;
-  bookGroup.rotation.x = THREE.MathUtils.lerp(-0.06, -0.28, cameraHeightT);
+  bookGroup.rotation.x = THREE.MathUtils.lerp(-0.03, -0.22, cameraHeightT);
   bookGroup.rotation.y = camera.aspect < 0.8 ? -0.08 : -0.2;
-  const cameraDistance = Math.max(distanceForHeight, distanceForWidth) + 0.7;
-  camera.position.set(0, THREE.MathUtils.lerp(0.05, 1.2, cameraHeightT), cameraDistance);
-  camera.lookAt(0, 0, 0);
+  const cameraDistance = Math.max(distanceForHeight, distanceForWidth) / zoom + 0.7;
+  camera.position.set(0, THREE.MathUtils.lerp(-0.12, 2.1, cameraHeightT), cameraDistance);
+  camera.lookAt(0, THREE.MathUtils.lerp(0.08, -0.25, cameraHeightT), 0);
   shadowPlane.scale.set((spreadW + 0.8) / 5.4, (pageH + 0.55) / 3.8, 1);
   fitBackgroundPlane(width, height);
+}
+
+function renderFrameOnce() {
+  refreshDynamicVideoTextures();
+  shadowPlane.material.opacity = 0.17;
+  renderer.render(scene, camera);
 }
 
 function render(now = performance.now()) {
@@ -1602,8 +1617,7 @@ function render(now = performance.now()) {
     }
   }
 
-  shadowPlane.material.opacity = 0.17;
-  renderer.render(scene, camera);
+  renderFrameOnce();
   requestAnimationFrame(render);
 }
 
@@ -1693,15 +1707,20 @@ async function exportVideo() {
 }
 
 function setRatio(ratio) {
+  if (state.recording || !ratio || state.ratio === ratio) return;
+  state.playing = false;
   state.ratio = ratio;
-  document.querySelectorAll(".segment").forEach((segment) => {
-    if (segment.dataset.ratio) segment.classList.toggle("active", segment.dataset.ratio === ratio);
+  document.querySelectorAll("[data-ratio]").forEach((segment) => {
+    segment.classList.toggle("active", segment.dataset.ratio === ratio);
   });
   rebuildBook();
 }
 
 function setExportFormat(format) {
-  state.exportFormat = format === "mov" ? "mov" : "mp4";
+  if (state.recording) return;
+  const nextFormat = format === "mov" ? "mov" : "mp4";
+  if (state.exportFormat === nextFormat) return;
+  state.exportFormat = nextFormat;
   document.querySelectorAll("[data-export-format]").forEach((button) => {
     button.classList.toggle("active", button.dataset.exportFormat === state.exportFormat);
   });
@@ -1709,23 +1728,31 @@ function setExportFormat(format) {
 }
 
 function setBindingDirection(binding) {
-  state.binding = binding === "right" ? "right" : "left";
+  if (state.recording) return;
+  const nextBinding = binding === "right" ? "right" : "left";
+  if (state.binding === nextBinding) return;
+  state.playing = false;
+  state.binding = nextBinding;
   document.querySelectorAll("[data-binding]").forEach((button) => {
     button.classList.toggle("active", button.dataset.binding === state.binding);
   });
-  rebuildBook();
+  rebuildBookMeshes();
 }
 
 function setCameraHeight(value) {
+  if (state.recording) return;
   state.cameraHeight = Number(value);
   els.cameraHeightOutput.value = `${Math.round(state.cameraHeight)}°`;
   resizeRenderer();
+  renderFrameOnce();
 }
 
 function setZoom(value) {
+  if (state.recording) return;
   state.zoom = Number(value);
   els.zoomOutput.value = `${state.zoom.toFixed(2)}x`;
   resizeRenderer();
+  renderFrameOnce();
 }
 
 function setAccent(value) {
@@ -1782,14 +1809,16 @@ els.pageList.addEventListener("drop", (event) => {
   movePageToEnd(event.dataTransfer.getData("text/plain") || state.draggingPageId);
 });
 
-document.querySelectorAll(".segment").forEach((segment) => {
-  if (segment.dataset.ratio) segment.addEventListener("click", () => setRatio(segment.dataset.ratio));
-  if (segment.dataset.exportFormat) {
-    segment.addEventListener("click", () => setExportFormat(segment.dataset.exportFormat));
-  }
-  if (segment.dataset.binding) {
-    segment.addEventListener("click", () => setBindingDirection(segment.dataset.binding));
-  }
+document.querySelectorAll("[data-ratio]").forEach((segment) => {
+  segment.addEventListener("click", () => setRatio(segment.dataset.ratio));
+});
+
+document.querySelectorAll("[data-export-format]").forEach((segment) => {
+  segment.addEventListener("click", () => setExportFormat(segment.dataset.exportFormat));
+});
+
+document.querySelectorAll("[data-binding]").forEach((segment) => {
+  segment.addEventListener("click", () => setBindingDirection(segment.dataset.binding));
 });
 
 els.languageButtons.forEach((button) => {

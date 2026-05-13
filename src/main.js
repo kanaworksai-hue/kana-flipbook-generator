@@ -1320,8 +1320,8 @@ function showTurningSheet(frontIndex, backIndex, progress, options = {}) {
 }
 
 function poseTurningSheet(progress, options = {}) {
-  const { pageW, pageH } = ratioSizes[state.ratio];
-  const lift = Math.sin(progress * Math.PI);
+  const { pageW } = ratioSizes[state.ratio];
+  const curl = Math.sin(progress * Math.PI);
   const side = options.side || activeTurnSide();
   const sideSign = side === "right" ? 1 : -1;
   const angleProgress = Math.pow(progress, 1.22);
@@ -1330,15 +1330,15 @@ function poseTurningSheet(progress, options = {}) {
   for (const mesh of [meshRefs.turnFront, meshRefs.turnBack]) {
     if (!mesh) continue;
     mesh.rotation.y = angle;
-    mesh.position.x = centeredOffset + sideSign * lift * 0.02;
-    mesh.position.y = lift * pageH * 0.012;
-    mesh.position.z = 0.09 + lift * 0.24;
+    mesh.position.x = centeredOffset;
+    mesh.position.y = 0;
+    mesh.position.z = 0.092 + curl * 0.075;
     bendPage(mesh, progress);
   }
 
   if (meshRefs.sweepShadow) {
     meshRefs.sweepShadow.visible = progress > 0.02 && progress < 0.98;
-    meshRefs.sweepShadow.material.opacity = lift * 0.42;
+    meshRefs.sweepShadow.material.opacity = curl * 0.34;
     meshRefs.sweepShadow.position.x = -sideSign * pageW * (0.08 + progress * 0.16);
     meshRefs.sweepShadow.scale.x = 0.78 + progress * 0.34;
   }
@@ -1389,9 +1389,9 @@ function bendPage(mesh, progress) {
     const u = side === "left" ? clamp01(Math.abs(x) / pageW) : clamp01(x / pageW);
     const verticalSoftness = 1 - Math.min(1, Math.abs(y) / (pageH / 2));
     const arch = Math.sin(u * Math.PI * 0.92) * curl;
-    positions.array[offset] = x - sideSign * Math.sin(u * Math.PI) * curl * 0.32;
-    positions.array[offset + 1] = y + arch * verticalSoftness * 0.055;
-    positions.array[offset + 2] = basePositions[offset + 2] + arch * 0.68 + Math.pow(u, 2.5) * curl * 0.12;
+    positions.array[offset] = x - sideSign * Math.sin(u * Math.PI) * curl * 0.26;
+    positions.array[offset + 1] = y + arch * verticalSoftness * 0.018;
+    positions.array[offset + 2] = basePositions[offset + 2] + arch * 0.46 + Math.pow(u, 2.5) * curl * 0.055;
   }
   positions.needsUpdate = true;
   mesh.geometry.computeVertexNormals();

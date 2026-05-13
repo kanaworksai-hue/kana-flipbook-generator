@@ -72,6 +72,10 @@ const state = {
   blankTexture: null,
   shadowTexture: null,
   ratio: "9:16",
+  exportFormat: "mp4",
+  binding: "left",
+  cameraHeight: 63,
+  zoom: 1,
   interval: 0.35,
   flip: 0.75,
   accent: "#16a085",
@@ -106,10 +110,17 @@ const els = {
   downloadLink: document.querySelector("#downloadLink"),
   statusText: document.querySelector("#statusText"),
   currentPageLabel: document.querySelector("#currentPageLabel"),
+  aspectRatioLabel: document.querySelector("#aspectRatioLabel"),
+  exportFormatLabel: document.querySelector("#exportFormatLabel"),
+  bindingDirectionLabel: document.querySelector("#bindingDirectionLabel"),
   holdInput: document.querySelector("#holdInput"),
   holdOutput: document.querySelector("#holdOutput"),
   flipInput: document.querySelector("#flipInput"),
   flipOutput: document.querySelector("#flipOutput"),
+  cameraHeightInput: document.querySelector("#cameraHeightInput"),
+  cameraHeightOutput: document.querySelector("#cameraHeightOutput"),
+  zoomInput: document.querySelector("#zoomInput"),
+  zoomOutput: document.querySelector("#zoomOutput"),
   accentInput: document.querySelector("#accentInput"),
   backgroundImageInput: document.querySelector("#backgroundImageInput"),
   clearBackgroundBtn: document.querySelector("#clearBackgroundBtn"),
@@ -128,6 +139,8 @@ const els = {
   videoSettingsHeading: document.querySelector("#videoSettingsHeading"),
   pageIntervalLabel: document.querySelector("#pageIntervalLabel"),
   flipDurationLabel: document.querySelector("#flipDurationLabel"),
+  cameraHeightLabel: document.querySelector("#cameraHeightLabel"),
+  zoomLabel: document.querySelector("#zoomLabel"),
   backgroundLabel: document.querySelector("#backgroundLabel"),
   backgroundColorLabel: document.querySelector("#backgroundColorLabel"),
   backgroundImageLabel: document.querySelector("#backgroundImageLabel"),
@@ -159,8 +172,14 @@ const translations = {
     addTextPage: "Add Text Page",
     videoSettings: "Video Settings",
     aspectRatio: "Aspect ratio",
+    exportFormat: "Export Format",
+    bindingDirection: "Binding Direction",
+    leftBind: "Left Bind",
+    rightBind: "Right Bind",
     pageInterval: "Page Interval",
     flipDuration: "Flip Duration",
+    cameraHeight: "Camera Height",
+    zoom: "Zoom",
     background: "Background",
     backgroundColor: "Background Color",
     backgroundImage: "Upload Background Image",
@@ -179,7 +198,7 @@ const translations = {
     previewing: "Previewing",
     previewComplete: "Preview complete",
     mediaRecorderUnsupported: "This browser does not support MediaRecorder video export",
-    movUnsupported: "This browser cannot record MOV/MP4. Please use Chrome or Safari",
+    formatUnsupported: "This browser cannot record MP4/MOV. Please use Chrome or Safari",
     generating: "Generating",
     done: "Done",
     pageSingular: "page",
@@ -210,8 +229,14 @@ const translations = {
     addTextPage: "テキストページを追加",
     videoSettings: "動画設定",
     aspectRatio: "画面比率",
+    exportFormat: "書き出し形式",
+    bindingDirection: "綴じ方向",
+    leftBind: "左綴じ",
+    rightBind: "右綴じ",
     pageInterval: "ページ間隔",
     flipDuration: "めくり時間",
+    cameraHeight: "カメラ高さ",
+    zoom: "ズーム",
     background: "背景",
     backgroundColor: "背景色",
     backgroundImage: "背景画像をアップロード",
@@ -230,7 +255,7 @@ const translations = {
     previewing: "プレビュー中",
     previewComplete: "プレビュー完了",
     mediaRecorderUnsupported: "このブラウザはMediaRecorderによる動画書き出しに対応していません",
-    movUnsupported: "このブラウザではMOV/MP4録画に対応していません。ChromeまたはSafariを使用してください",
+    formatUnsupported: "このブラウザではMP4/MOV録画に対応していません。ChromeまたはSafariを使用してください",
     generating: "生成中",
     done: "完了",
     pageSingular: "ページ",
@@ -308,8 +333,13 @@ function applyStaticLanguage() {
   setText(els.contentLabel, labels.contentLabel);
   setText(els.addTextLabel, labels.addTextPage);
   setText(els.videoSettingsHeading, labels.videoSettings);
+  setText(els.aspectRatioLabel, labels.aspectRatio);
+  setText(els.exportFormatLabel, labels.exportFormat);
+  setText(els.bindingDirectionLabel, labels.bindingDirection);
   setText(els.pageIntervalLabel, labels.pageInterval);
   setText(els.flipDurationLabel, labels.flipDuration);
+  setText(els.cameraHeightLabel, labels.cameraHeight);
+  setText(els.zoomLabel, labels.zoom);
   setText(els.backgroundLabel, labels.background);
   setText(els.backgroundColorLabel, labels.backgroundColor);
   setText(els.backgroundImageLabel, labels.backgroundImage);
@@ -324,10 +354,16 @@ function applyStaticLanguage() {
   setAttribute(els.textInput, "placeholder", labels.contentPlaceholder);
   setAttribute(els.resetBtn, "aria-label", labels.resetProject);
   setAttribute(els.resetBtn, "title", labels.resetProject);
-  setAttribute(document.querySelector(".segmented"), "aria-label", labels.aspectRatio);
+  setAttribute(document.querySelector(".ratio-segmented"), "aria-label", labels.aspectRatio);
+  setAttribute(document.querySelector("[data-export-format]")?.parentElement, "aria-label", labels.exportFormat);
+  setAttribute(document.querySelector("[data-binding]")?.parentElement, "aria-label", labels.bindingDirection);
   setAttribute(canvas, "aria-label", labels.canvasLabel);
   els.languageButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.language === state.language);
+  });
+  document.querySelectorAll("[data-binding]").forEach((button) => {
+    const label = button.dataset.binding === "left" ? labels.leftBind : labels.rightBind;
+    button.textContent = label;
   });
   updateBackgroundStatus();
 }
@@ -354,22 +390,36 @@ function ratioLabel() {
   return `${width}x${height}`;
 }
 
-function getRecordingType() {
+function activeTurnSide() {
+  return state.binding === "right" ? "left" : "right";
+}
+
+function oppositeSide(side) {
+  return side === "left" ? "right" : "left";
+}
+
+function spreadPageIndex(completedFlips, side) {
+  const base = 2 * completedFlips;
+  if (state.binding === "right") {
+    return side === "left" ? base + 1 : base;
+  }
+  return side === "left" ? base : base + 1;
+}
+
+function getRecordingType(format = state.exportFormat) {
+  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return null;
   const candidates = [
     "video/mp4;codecs=avc1.42E01E",
     "video/mp4;codecs=avc1.4D401E",
     "video/mp4;codecs=avc1.640028",
     "video/mp4;codecs=avc1",
     "video/mp4",
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
   ];
   const mimeType = candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
   if (!mimeType) return null;
   return {
     mimeType,
-    extension: mimeType.startsWith("video/mp4") ? "mov" : "webm",
+    extension: format === "mov" ? "mov" : "mp4",
   };
 }
 
@@ -998,13 +1048,14 @@ function createPageMesh(side, texture, materialSide, z, mirrorUv = false) {
 
 function buildOpenBook() {
   addBookBack();
+  const turnSide = activeTurnSide();
   meshRefs.leftPage = createPageMesh("left", textureAt(-1), THREE.FrontSide, 0.04);
   meshRefs.revealPage = createPageMesh("right", textureAt(0), THREE.FrontSide, 0.045);
-  meshRefs.turnFront = createPageMesh("right", textureAt(0), THREE.FrontSide, 0.09);
-  meshRefs.turnBack = createPageMesh("right", textureAt(1, { clamp: true }), THREE.BackSide, 0.091, true);
+  meshRefs.turnFront = createPageMesh(turnSide, textureAt(0), THREE.FrontSide, 0.09);
+  meshRefs.turnBack = createPageMesh(turnSide, textureAt(1, { clamp: true }), THREE.BackSide, 0.091, true);
 
   meshRefs.sweepShadow = new THREE.Mesh(
-    createPageGeometry("left"),
+    createPageGeometry(oppositeSide(turnSide)),
     new THREE.MeshBasicMaterial({
       map: state.shadowTexture,
       transparent: true,
@@ -1109,7 +1160,7 @@ function getTimelinePose(timeSeconds) {
     return {
       mode: "spread",
       completedFlips: flipIndex,
-      labelIndex: spreadLeftIndex(flipIndex),
+      labelIndex: Math.min(2 * flipIndex, pageCount - 1),
     };
   }
 
@@ -1145,11 +1196,11 @@ function getEndHoldDuration() {
 }
 
 function spreadLeftIndex(completedFlips) {
-  return Math.min(2 * completedFlips, state.textures.length - 1);
+  return Math.min(spreadPageIndex(completedFlips, "left"), state.textures.length - 1);
 }
 
 function spreadRightIndex(completedFlips) {
-  const index = 2 * completedFlips + 1;
+  const index = spreadPageIndex(completedFlips, "right");
   return index < state.textures.length ? index : -1;
 }
 
@@ -1218,13 +1269,19 @@ function renderActiveFlip(flipIndex, progress) {
   const frontIndex = flipFrontIndex(flipIndex);
   const backIndex = Math.min(frontIndex + 1, state.textures.length - 1);
   const revealIndex = frontIndex + 2;
+  const turnSide = activeTurnSide();
   setMeshVisible(meshRefs.leftPage, true);
   setMeshVisible(meshRefs.revealPage, true);
-  setMeshTexture(meshRefs.leftPage, spreadLeftIndex(flipIndex), { clamp: true });
-  setMeshTexture(meshRefs.revealPage, revealIndex);
+  if (turnSide === "right") {
+    setMeshTexture(meshRefs.leftPage, spreadLeftIndex(flipIndex), { clamp: true });
+    setMeshTexture(meshRefs.revealPage, revealIndex);
+  } else {
+    setMeshTexture(meshRefs.leftPage, revealIndex);
+    setMeshTexture(meshRefs.revealPage, spreadRightIndex(flipIndex), { clamp: true });
+  }
   settlePage(meshRefs.leftPage);
   settlePage(meshRefs.revealPage);
-  showTurningSheet(frontIndex, backIndex, progress, { centered: false, clampBack: true });
+  showTurningSheet(frontIndex, backIndex, progress, { centered: false, clampBack: true, side: turnSide });
   updateStacks(flipIndex + 1, progress, "flip");
 }
 
@@ -1256,22 +1313,24 @@ function showTurningSheet(frontIndex, backIndex, progress, options = {}) {
 function poseTurningSheet(progress, options = {}) {
   const { pageW, pageH } = ratioSizes[state.ratio];
   const lift = Math.sin(progress * Math.PI);
+  const side = options.side || activeTurnSide();
+  const sideSign = side === "right" ? 1 : -1;
   const angleProgress = Math.pow(progress, 1.22);
-  const angle = -Math.PI * angleProgress;
-  const centeredOffset = options.centered ? -pageW * 0.5 * (1 - progress) : 0;
+  const angle = -Math.PI * angleProgress * sideSign;
+  const centeredOffset = options.centered ? -sideSign * pageW * 0.5 * (1 - progress) : 0;
   for (const mesh of [meshRefs.turnFront, meshRefs.turnBack]) {
     if (!mesh) continue;
     mesh.rotation.y = angle;
-    mesh.position.x = centeredOffset + Math.sin(progress * Math.PI) * 0.025;
-    mesh.position.y = -lift * pageH * 0.07;
-    mesh.position.z = 0.09 + lift * 0.28;
+    mesh.position.x = centeredOffset + sideSign * lift * 0.02;
+    mesh.position.y = lift * pageH * 0.012;
+    mesh.position.z = 0.09 + lift * 0.24;
     bendPage(mesh, progress);
   }
 
   if (meshRefs.sweepShadow) {
     meshRefs.sweepShadow.visible = progress > 0.02 && progress < 0.98;
-    meshRefs.sweepShadow.material.opacity = lift * 0.5;
-    meshRefs.sweepShadow.position.x = -pageW * (0.08 + progress * 0.16);
+    meshRefs.sweepShadow.material.opacity = lift * 0.42;
+    meshRefs.sweepShadow.position.x = -sideSign * pageW * (0.08 + progress * 0.16);
     meshRefs.sweepShadow.scale.x = 0.78 + progress * 0.34;
   }
 }
@@ -1292,6 +1351,9 @@ function updateStacks(leftSheets, activeProgress, mode) {
     leftThickness += activeProgress * sheetThickness;
     rightThickness = Math.max(0, rightThickness - activeProgress * sheetThickness);
   }
+  if (state.binding === "right") {
+    [leftThickness, rightThickness] = [rightThickness, leftThickness];
+  }
   setStackThickness(meshRefs.leftStack, leftThickness);
   setStackThickness(meshRefs.rightStack, rightThickness);
 }
@@ -1307,16 +1369,18 @@ function bendPage(mesh, progress) {
   const basePositions = mesh.geometry.userData.basePositions;
   if (!basePositions) return;
   const { pageW, pageH } = ratioSizes[state.ratio];
+  const side = mesh.geometry.userData.side;
+  const sideSign = side === "right" ? 1 : -1;
   const positions = mesh.geometry.attributes.position;
   const curl = Math.sin(progress * Math.PI);
   for (let i = 0; i < positions.count; i += 1) {
     const offset = i * 3;
     const x = basePositions[offset];
     const y = basePositions[offset + 1];
-    const u = clamp01(x / pageW);
+    const u = side === "left" ? clamp01(Math.abs(x) / pageW) : clamp01(x / pageW);
     const verticalSoftness = 1 - Math.min(1, Math.abs(y) / (pageH / 2));
     const arch = Math.sin(u * Math.PI * 0.92) * curl;
-    positions.array[offset] = x - Math.sin(u * Math.PI) * curl * 0.32;
+    positions.array[offset] = x - sideSign * Math.sin(u * Math.PI) * curl * 0.32;
     positions.array[offset + 1] = y + arch * verticalSoftness * 0.055;
     positions.array[offset + 2] = basePositions[offset + 2] + arch * 0.68 + Math.pow(u, 2.5) * curl * 0.12;
   }
@@ -1509,14 +1573,19 @@ function fitBookToViewport(width, height) {
   camera.updateProjectionMatrix();
   const { pageW, pageH } = ratioSizes[state.ratio];
   const spreadW = pageW * 2.08;
-  const scale = camera.aspect < 0.8 ? 0.72 : 0.94;
+  const baseScale = camera.aspect < 0.8 ? 0.72 : 0.94;
+  const scale = baseScale * state.zoom;
+  const cameraHeightT = (state.cameraHeight - 40) / 45;
   const fovTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const distanceForHeight = (pageH * scale * 0.58) / fovTan;
-  const distanceForWidth = (spreadW * scale * 0.54) / (fovTan * camera.aspect);
+  const distanceForHeight = (pageH * baseScale * 0.58) / fovTan;
+  const distanceForWidth = (spreadW * baseScale * 0.54) / (fovTan * camera.aspect);
   bookGroup.scale.setScalar(scale);
-  bookGroup.rotation.x = -0.12;
+  bookGroup.position.y = 0;
+  bookGroup.rotation.x = THREE.MathUtils.lerp(-0.06, -0.28, cameraHeightT);
   bookGroup.rotation.y = camera.aspect < 0.8 ? -0.08 : -0.2;
-  camera.position.set(0, 0.12, Math.max(distanceForHeight, distanceForWidth) + 0.7);
+  const cameraDistance = Math.max(distanceForHeight, distanceForWidth) + 0.7;
+  camera.position.set(0, THREE.MathUtils.lerp(0.05, 1.2, cameraHeightT), cameraDistance);
+  camera.lookAt(0, 0, 0);
   shadowPlane.scale.set((spreadW + 0.8) / 5.4, (pageH + 0.55) / 3.8, 1);
   fitBackgroundPlane(width, height);
 }
@@ -1533,9 +1602,7 @@ function render(now = performance.now()) {
     }
   }
 
-  const t = now / 1000;
-  bookGroup.position.y = Math.sin(t * 0.7) * 0.035;
-  shadowPlane.material.opacity = 0.16 + Math.sin(t * 0.7) * 0.025;
+  shadowPlane.material.opacity = 0.17;
   renderer.render(scene, camera);
   requestAnimationFrame(render);
 }
@@ -1552,13 +1619,13 @@ function preview() {
 
 async function exportVideo() {
   if (!state.pages.length || state.recording) return;
-  const recordingType = getRecordingType();
-  if (!recordingType) {
+  if (typeof MediaRecorder === "undefined") {
     els.statusText.textContent = copy().mediaRecorderUnsupported;
     return;
   }
-  if (recordingType.extension !== "mov") {
-    els.statusText.textContent = copy().movUnsupported;
+  const recordingType = getRecordingType(state.exportFormat);
+  if (!recordingType) {
+    els.statusText.textContent = copy().formatUnsupported;
     return;
   }
 
@@ -1612,7 +1679,7 @@ async function exportVideo() {
   const url = URL.createObjectURL(blob);
   if (els.downloadLink.href) URL.revokeObjectURL(els.downloadLink.href);
   els.downloadLink.href = url;
-  els.downloadLink.download = `flipbook-${state.ratio.replace(":", "x")}.mov`;
+  els.downloadLink.download = `flipbook-${state.ratio.replace(":", "x")}.${recordingType.extension}`;
   els.downloadLink.classList.remove("hidden");
   els.statusText.textContent = `${copy().done} · ${Math.round(blob.size / 1024 / 1024 * 10) / 10} MB`;
 
@@ -1628,9 +1695,37 @@ async function exportVideo() {
 function setRatio(ratio) {
   state.ratio = ratio;
   document.querySelectorAll(".segment").forEach((segment) => {
-    segment.classList.toggle("active", segment.dataset.ratio === ratio);
+    if (segment.dataset.ratio) segment.classList.toggle("active", segment.dataset.ratio === ratio);
   });
   rebuildBook();
+}
+
+function setExportFormat(format) {
+  state.exportFormat = format === "mov" ? "mov" : "mp4";
+  document.querySelectorAll("[data-export-format]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.exportFormat === state.exportFormat);
+  });
+  els.downloadLink.download = `flipbook-video.${state.exportFormat}`;
+}
+
+function setBindingDirection(binding) {
+  state.binding = binding === "right" ? "right" : "left";
+  document.querySelectorAll("[data-binding]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.binding === state.binding);
+  });
+  rebuildBook();
+}
+
+function setCameraHeight(value) {
+  state.cameraHeight = Number(value);
+  els.cameraHeightOutput.value = `${Math.round(state.cameraHeight)}°`;
+  resizeRenderer();
+}
+
+function setZoom(value) {
+  state.zoom = Number(value);
+  els.zoomOutput.value = `${state.zoom.toFixed(2)}x`;
+  resizeRenderer();
 }
 
 function setAccent(value) {
@@ -1688,7 +1783,13 @@ els.pageList.addEventListener("drop", (event) => {
 });
 
 document.querySelectorAll(".segment").forEach((segment) => {
-  segment.addEventListener("click", () => setRatio(segment.dataset.ratio));
+  if (segment.dataset.ratio) segment.addEventListener("click", () => setRatio(segment.dataset.ratio));
+  if (segment.dataset.exportFormat) {
+    segment.addEventListener("click", () => setExportFormat(segment.dataset.exportFormat));
+  }
+  if (segment.dataset.binding) {
+    segment.addEventListener("click", () => setBindingDirection(segment.dataset.binding));
+  }
 });
 
 els.languageButtons.forEach((button) => {
@@ -1705,6 +1806,8 @@ els.flipInput.addEventListener("input", () => {
   els.flipOutput.value = `${state.flip.toFixed(2)}s`;
 });
 
+els.cameraHeightInput.addEventListener("input", () => setCameraHeight(els.cameraHeightInput.value));
+els.zoomInput.addEventListener("input", () => setZoom(els.zoomInput.value));
 els.accentInput.addEventListener("input", () => setAccent(els.accentInput.value));
 els.backgroundImageInput.addEventListener("change", async (event) => {
   await setBackgroundImage(event.target.files[0]);

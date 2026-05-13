@@ -367,14 +367,29 @@ a:focus-visible {
   color: var(--accent-dark);
 }
 
+.option-field {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
 .segmented {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ece4d8;
+}
+
+.ratio-segmented {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.two-segmented {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .segment {
@@ -730,7 +745,7 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .segmented {
+  .ratio-segmented {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 

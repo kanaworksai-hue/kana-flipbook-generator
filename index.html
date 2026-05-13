@@ -69,12 +69,31 @@
           <div class="section-heading">
             <h2 id="videoSettingsHeading">Video Settings</h2>
           </div>
-          <div class="segmented" role="group" aria-label="Aspect ratio">
-            <button class="segment active" type="button" data-ratio="9:16">9:16</button>
-            <button class="segment" type="button" data-ratio="3:4">3:4</button>
-            <button class="segment" type="button" data-ratio="1:1">1:1</button>
-            <button class="segment" type="button" data-ratio="4:3">4:3</button>
-            <button class="segment" type="button" data-ratio="16:9">16:9</button>
+          <div class="option-field">
+            <span id="aspectRatioLabel">Aspect Ratio</span>
+            <div class="segmented ratio-segmented" role="group" aria-label="Aspect ratio">
+              <button class="segment active" type="button" data-ratio="9:16">9:16</button>
+              <button class="segment" type="button" data-ratio="3:4">3:4</button>
+              <button class="segment" type="button" data-ratio="1:1">1:1</button>
+              <button class="segment" type="button" data-ratio="4:3">4:3</button>
+              <button class="segment" type="button" data-ratio="16:9">16:9</button>
+            </div>
+          </div>
+
+          <div class="option-field">
+            <span id="exportFormatLabel">Export Format</span>
+            <div class="segmented two-segmented" role="group" aria-label="Export format">
+              <button class="segment active" type="button" data-export-format="mp4">MP4</button>
+              <button class="segment" type="button" data-export-format="mov">MOV</button>
+            </div>
+          </div>
+
+          <div class="option-field">
+            <span id="bindingDirectionLabel">Binding Direction</span>
+            <div class="segmented two-segmented" role="group" aria-label="Binding direction">
+              <button class="segment active" type="button" data-binding="left">Left Bind</button>
+              <button class="segment" type="button" data-binding="right">Right Bind</button>
+            </div>
           </div>
 
           <label class="range-field">
@@ -85,6 +104,16 @@
           <label class="range-field">
             <span><span id="flipDurationLabel">Flip Duration</span> <output id="flipOutput">0.75s</output></span>
             <input id="flipInput" type="range" min="0.35" max="10" step="0.05" value="0.75" />
+          </label>
+
+          <label class="range-field">
+            <span><span id="cameraHeightLabel">Camera Height</span> <output id="cameraHeightOutput">63°</output></span>
+            <input id="cameraHeightInput" type="range" min="40" max="85" step="1" value="63" />
+          </label>
+
+          <label class="range-field">
+            <span><span id="zoomLabel">Zoom</span> <output id="zoomOutput">1.00x</output></span>
+            <input id="zoomInput" type="range" min="0.65" max="1.35" step="0.01" value="1" />
           </label>
 
           <div class="background-panel">
@@ -137,7 +166,7 @@
             <p id="statusText">Add assets to start previewing</p>
             <strong id="currentPageLabel">KANA Flipbook Generator</strong>
           </div>
-          <a class="download-link hidden" id="downloadLink" download="flipbook-video.mov">
+          <a class="download-link hidden" id="downloadLink" download="flipbook-video.mp4">
             <i data-lucide="download"></i>
             <span id="downloadLabel">Download Video</span>
           </a>

@@ -74,7 +74,7 @@ const state = {
   ratio: "9:16",
   exportFormat: "mp4",
   binding: "left",
-  cameraHeight: 63,
+  bookAngle: 63,
   zoom: 1,
   interval: 0.35,
   flip: 0.75,
@@ -117,8 +117,8 @@ const els = {
   holdOutput: document.querySelector("#holdOutput"),
   flipInput: document.querySelector("#flipInput"),
   flipOutput: document.querySelector("#flipOutput"),
-  cameraHeightInput: document.querySelector("#cameraHeightInput"),
-  cameraHeightOutput: document.querySelector("#cameraHeightOutput"),
+  bookAngleInput: document.querySelector("#bookAngleInput"),
+  bookAngleOutput: document.querySelector("#bookAngleOutput"),
   zoomInput: document.querySelector("#zoomInput"),
   zoomOutput: document.querySelector("#zoomOutput"),
   accentInput: document.querySelector("#accentInput"),
@@ -139,7 +139,7 @@ const els = {
   videoSettingsHeading: document.querySelector("#videoSettingsHeading"),
   pageIntervalLabel: document.querySelector("#pageIntervalLabel"),
   flipDurationLabel: document.querySelector("#flipDurationLabel"),
-  cameraHeightLabel: document.querySelector("#cameraHeightLabel"),
+  bookAngleLabel: document.querySelector("#bookAngleLabel"),
   zoomLabel: document.querySelector("#zoomLabel"),
   backgroundLabel: document.querySelector("#backgroundLabel"),
   backgroundColorLabel: document.querySelector("#backgroundColorLabel"),
@@ -178,7 +178,7 @@ const translations = {
     rightBind: "Right Bind",
     pageInterval: "Page Interval",
     flipDuration: "Flip Duration",
-    cameraHeight: "Camera Height",
+    bookAngle: "Book Angle",
     zoom: "Zoom",
     background: "Background",
     backgroundColor: "Background Color",
@@ -235,7 +235,7 @@ const translations = {
     rightBind: "右綴じ",
     pageInterval: "ページ間隔",
     flipDuration: "めくり時間",
-    cameraHeight: "カメラ高さ",
+    bookAngle: "本の角度",
     zoom: "ズーム",
     background: "背景",
     backgroundColor: "背景色",
@@ -338,7 +338,7 @@ function applyStaticLanguage() {
   setText(els.bindingDirectionLabel, labels.bindingDirection);
   setText(els.pageIntervalLabel, labels.pageInterval);
   setText(els.flipDurationLabel, labels.flipDuration);
-  setText(els.cameraHeightLabel, labels.cameraHeight);
+  setText(els.bookAngleLabel, labels.bookAngle);
   setText(els.zoomLabel, labels.zoom);
   setText(els.backgroundLabel, labels.background);
   setText(els.backgroundColorLabel, labels.backgroundColor);
@@ -1584,17 +1584,17 @@ function fitBookToViewport(width, height) {
   const spreadW = pageW * 2.08;
   const baseScale = camera.aspect < 0.8 ? 0.72 : 0.94;
   const zoom = THREE.MathUtils.clamp(state.zoom, 0.65, 1.35);
-  const cameraHeightT = clamp01((state.cameraHeight - 40) / 45);
+  const bookAngleT = clamp01((state.bookAngle - 40) / 45);
   const fovTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const distanceForHeight = (pageH * baseScale * 0.58) / fovTan;
   const distanceForWidth = (spreadW * baseScale * 0.54) / (fovTan * camera.aspect);
-  bookGroup.scale.setScalar(baseScale);
+  bookGroup.scale.setScalar(baseScale * zoom);
   bookGroup.position.y = 0;
-  bookGroup.rotation.x = THREE.MathUtils.lerp(-0.03, -0.22, cameraHeightT);
+  bookGroup.rotation.x = THREE.MathUtils.lerp(-0.02, -0.36, bookAngleT);
   bookGroup.rotation.y = camera.aspect < 0.8 ? -0.08 : -0.2;
-  const cameraDistance = Math.max(distanceForHeight, distanceForWidth) / zoom + 0.7;
-  camera.position.set(0, THREE.MathUtils.lerp(-0.12, 2.1, cameraHeightT), cameraDistance);
-  camera.lookAt(0, THREE.MathUtils.lerp(0.08, -0.25, cameraHeightT), 0);
+  const cameraDistance = Math.max(distanceForHeight, distanceForWidth) + 0.7;
+  camera.position.set(0, 0.18, cameraDistance);
+  camera.lookAt(0, 0, 0);
   shadowPlane.scale.set((spreadW + 0.8) / 5.4, (pageH + 0.55) / 3.8, 1);
   fitBackgroundPlane(width, height);
 }
@@ -1739,10 +1739,10 @@ function setBindingDirection(binding) {
   rebuildBookMeshes();
 }
 
-function setCameraHeight(value) {
+function setBookAngle(value) {
   if (state.recording) return;
-  state.cameraHeight = Number(value);
-  els.cameraHeightOutput.value = `${Math.round(state.cameraHeight)}°`;
+  state.bookAngle = Number(value);
+  els.bookAngleOutput.value = `${Math.round(state.bookAngle)}°`;
   resizeRenderer();
   renderFrameOnce();
 }
@@ -1835,7 +1835,7 @@ els.flipInput.addEventListener("input", () => {
   els.flipOutput.value = `${state.flip.toFixed(2)}s`;
 });
 
-els.cameraHeightInput.addEventListener("input", () => setCameraHeight(els.cameraHeightInput.value));
+els.bookAngleInput.addEventListener("input", () => setBookAngle(els.bookAngleInput.value));
 els.zoomInput.addEventListener("input", () => setZoom(els.zoomInput.value));
 els.accentInput.addEventListener("input", () => setAccent(els.accentInput.value));
 els.backgroundImageInput.addEventListener("change", async (event) => {
